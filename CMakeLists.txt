@@ -172,22 +172,34 @@ CONFIGURE_FILE (
     @ONLY
 )
 
-INCLUDE_DIRECTORIES (
-    ./
-    include/
-    ${CMAKE_CURRENT_BINARY_DIR}/include/
-)
-
 IF (MSGPACK_ENABLE_SHARED)
     ADD_LIBRARY (msgpackc SHARED
         ${msgpackc_SOURCES}
         ${msgpackc_HEADERS}
+    )
+
+    TARGET_INCLUDE_DIRECTORIES(msgpackc
+       PUBLIC
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+          $<INSTALL_INTERFACE:include>
+       PRIVATE
+          ${CMAKE_CURRENT_SOURCE_DIR}
     )
 ENDIF ()
 
 ADD_LIBRARY (msgpackc-static STATIC
     ${msgpackc_SOURCES}
     ${msgpackc_HEADERS}
+)
+
+TARGET_INCLUDE_DIRECTORIES(msgpackc-static
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 SET_TARGET_PROPERTIES (msgpackc-static PROPERTIES OUTPUT_NAME "msgpackc")
@@ -253,7 +265,8 @@ ELSE()
     SET (MSGPACK_INSTALLTARGETS msgpackc-static)
 ENDIF ()
 
-INSTALL (TARGETS ${MSGPACK_INSTALLTARGETS} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+INSTALL (TARGETS ${MSGPACK_INSTALLTARGETS} EXPORT msgpack-targets
+                                           RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
                                            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
                                            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 FOREACH (file ${msgpackc_HEADERS})
@@ -310,3 +323,35 @@ IF (DOXYGEN_FOUND)
         DEPENDS doxygen_c doxygen_cpp
     )
 ENDIF ()
+
+include(CMakePackageConfigHelpers)
+
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/msgpack-config-version.cmake"
+  VERSION ${VERSION}
+  COMPATIBILITY SameMajorVersion
+)
+
+export(EXPORT msgpack-targets
+  FILE "${CMAKE_CURRENT_BINARY_DIR}/msgpack-targets.cmake"
+)
+
+configure_file(msgpack-config.cmake
+  "${CMAKE_CURRENT_BINARY_DIR}/msgpack-config.cmake"
+  COPYONLY
+)
+
+install(EXPORT msgpack-targets
+  FILE
+    msgpack-config.cmake
+  DESTINATION
+    ${CMAKE_INSTALL_LIBDIR}/cmake/msgpack
+)
+
+install(
+  FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/msgpack-config.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/msgpack-config-version.cmake"
+  DESTINATION
+    ${CMAKE_INSTALL_LIBDIR}/cmake/msgpack
+)

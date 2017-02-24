@@ -105,4 +105,7 @@ ADD_EXECUTABLE (
     multi_file
     multi_file1.cpp multi_file2.cpp
 )
+TARGET_LINK_LIBRARIES (multi_file
+    ${MSGPACK_TEST_LIB}
+)
 ADD_TEST (multi_file multi_file)
